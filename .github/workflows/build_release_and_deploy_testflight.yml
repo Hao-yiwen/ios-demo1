@@ -1,0 +1,135 @@
+name: build_release_and_deploy_testflight
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: macos-latest
+    permissions:
+      contents: write  # 确保 GITHUB_TOKEN 有足够的权限
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.3.3
+
+      - name: Install dependencies
+        run: |
+          gem install bundler
+          bundle install
+          gem install fastlane
+
+      - name: Decode and create API key file
+        run: echo ${{ secrets.BASE64_API_KEY_CONTENT }} | base64 --decode > ios-study-api-key.json
+
+      - name: Run Fastlane beta lane
+        run: fastlane build_release
+        env:
+          API_KEY_PATH: ios-study-api-key.json
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          FASTLANE_USER: ${{ secrets.FASTLANE_USER }}
+          FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: ${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}
+          KEY_ID: ${{ secrets.KEY_ID }}
+          ISSUER_ID: ${{ secrets.ISSUER_ID }}
+
+      - name: Run Fastlane beta lane
+        run: fastlane build_debug
+        env:
+          API_KEY_PATH: ios-study-api-key.json
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          FASTLANE_USER: ${{ secrets.FASTLANE_USER }}
+          FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: ${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}
+          KEY_ID: ${{ secrets.KEY_ID }}
+          ISSUER_ID: ${{ secrets.ISSUER_ID }}
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          body: |
+            Release notes for ${{ github.ref }}
+          draft: false
+          prerelease: false
+  
+      - name: Upload IPA to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: /Users/runner/work/ios-demo1/ios-demo1/ios-demo1.ipa
+          asset_name: ios-demo1.ipa
+          asset_content_type: application/octet-stream
+
+      - name: Upload IPA to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: /Users/runner/work/ios-demo1/ios-demo1/build/ios-demo1.ipa
+          asset_name: ios-demo1-debug.ipa
+          asset_content_type: application/octet-stream
+
+      - name: Upload dSYM to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: /Users/runner/work/ios-demo1/ios-demo1/ios-demo1.app.dSYM.zip
+          asset_name: ios-demo1.dSYM.zip
+          asset_content_type: application/zip
+      
+      - name: Upload dSYM to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: /Users/runner/work/ios-demo1/ios-demo1/build/ios-demo1.app.dSYM.zip
+          asset_name: ios-demo1-debug.dSYM.zip
+          asset_content_type: application/zip
+
+      - name: Generate QR codes
+        run: |
+          echo "Generating QR code for ios-demo1-debug.ipa"
+          echo "https://github.com/${{ github.repository }}/releases/download/${{ github.ref }}/ios-demo1-debug.ipa" | qr --factory=svg > ios-demo1-debug-qr.svg
+          echo "Generating QR code for ios-demo1.ipa"
+          echo "https://github.com/${{ github.repository }}/releases/download/${{ github.ref }}/ios-demo1.ipa" | qr --factory=svg > ios-demo1-qr.svg
+      
+      - name: Upload QR codes to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./ios-demo1-debug-qr.svg
+          asset_name: ios-demo1-debug-qr.svg
+          asset_content_type: image/svg+xml
+  
+      - name: Upload QR codes to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./ios-demo1-qr.svg
+          asset_name: ios-demo1-qr.svg
+          asset_content_type: image/svg+xml
