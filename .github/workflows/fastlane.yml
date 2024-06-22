@@ -13,8 +13,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
       - name: Set up Ruby
-        uses: actions/setup-ruby@v1
+        uses: ruby/setup-ruby@v1
         with:
           ruby-version: 3.3.3
 
@@ -31,3 +36,4 @@ jobs:
         run: fastlane beta
         env:
           API_KEY_PATH: ios-study-api-key.json
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
