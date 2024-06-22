@@ -1,0 +1,33 @@
+name: Build and Deploy to TestFlight
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Ruby
+        uses: actions/setup-ruby@v1
+        with:
+          ruby-version: '3.3.3' # 根据你的项目需要选择正确的Ruby版本
+
+      - name: Install dependencies
+        run: |
+          gem install bundler
+          bundle install
+          gem install fastlane
+
+      - name: Create API key file
+        run: echo "${{ secrets.API_KEY_CONTENT }}" > ios-study-api-key.json
+
+      - name: Run Fastlane beta lane
+        run: fastlane beta
+        env:
+          API_KEY_PATH: ios-study-api-key.json
