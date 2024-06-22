@@ -13,8 +13,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
       - name: Set up Ruby
-        uses: actions/setup-ruby@v1
+        uses: ruby/setup-ruby@v1
         with:
           ruby-version: 3.3.3
 
@@ -24,10 +29,15 @@ jobs:
           bundle install
           gem install fastlane
 
-      - name: Create API key file
-        run: echo "${{ secrets.API_KEY_CONTENT }}" > ios-study-api-key.json
+      - name: Decode and create API key file
+        run: echo ${{ secrets.BASE64_API_KEY_CONTENT }} | base64 --decode > ios-study-api-key.json
 
       - name: Run Fastlane beta lane
         run: fastlane beta
         env:
           API_KEY_PATH: ios-study-api-key.json
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          FASTLANE_USER: ${{ secrets.FASTLANE_USER }}
+          FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: ${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}
+          KEY_ID: ${{ secrets.KEY_ID }}
+          ISSUER_ID: ${{ secrets.ISSUER_ID }}
