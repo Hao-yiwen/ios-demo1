@@ -2,12 +2,36 @@ default_platform(:ios)
 
 platform :ios do
   desc "Push a new beta build to TestFlight"
-  lane :beta do
-    match(type: "adhoc", readonly: true)
+  lane :build_release do
+    setup_ci if ENV['CI']
+    match(type: "appstore", readonly: true)
     increment_build_number(xcodeproj: "ios-demo1.xcodeproj")
-    build_app(scheme: "ios-demo1")
+    build_app(
+      scheme: "ios-demo1",
+      export_method: "app-store",
+      project: "ios-demo1.xcodeproj", # 使用project参数
+      xcargs: "-allowProvisioningUpdates" # 允许Xcode自动处理配置文件
+    )
     upload_to_testflight(
-      api_key_path: ENV['API_KEY_PATH']
+      # api_key_path: ENV['API_KEY_PATH']
+      api_key_path: "./ios-study-api-key.json"
+    )
+  end
+
+  desc "increment build version"
+  lane :increment_version do
+    increment_build_number(xcodeproj: "ios-demo1.xcodeproj")
+  end
+
+  desc "Build and sign a Debug package"
+  lane :build_debug do
+    setup_ci if ENV['CI']
+    match(type: "development", readonly: true)
+    build_app(
+      scheme: "ios-demo1",
+      export_method: "development",
+      project: "ios-demo1.xcodeproj", # 使用project参数
+      xcargs: "-allowProvisioningUpdates" # 允许Xcode自动处理配置文件
     )
   end
 end
