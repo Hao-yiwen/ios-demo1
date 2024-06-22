@@ -16,7 +16,7 @@ jobs:
       - name: Set up Ruby
         uses: actions/setup-ruby@v1
         with:
-          ruby-version: '3.3.3' # 根据你的项目需要选择正确的Ruby版本
+          ruby-version: 3.3.3
 
       - name: Install dependencies
         run: |
