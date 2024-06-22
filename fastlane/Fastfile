@@ -5,7 +5,12 @@ platform :ios do
   lane :beta do
     match(type: "adhoc", readonly: true)
     increment_build_number(xcodeproj: "ios-demo1.xcodeproj")
-    build_app(scheme: "ios-demo1")
+    build_app(
+      scheme: "ios-demo1",
+      export_method: "ad-hoc",
+      project: "ios-demo1.xcodeproj", # 使用project参数
+      xcargs: "-allowProvisioningUpdates" # 允许Xcode自动处理配置文件
+    )
     upload_to_testflight(
       api_key_path: ENV['API_KEY_PATH']
     )
