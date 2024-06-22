@@ -1,0 +1,44 @@
+name: build_release_and_deploy_testflight
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: macos-latest
+    permissions:
+      contents: write  # 确保 GITHUB_TOKEN 有足够的权限
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        
+      - name: Install qrencode
+        run: brew install qrencode
+  
+      - name: Generate QR code for ios-demo1-debug.ipa
+        run: |
+          qrencode -o ios-demo1-debug-qr.png "https://github.com/${{ github.repository }}/releases/download/${{ github.ref }}/ios-demo1-debug.ipa"
+          qrencode -o ios-demo1-qr.png "https://github.com/${{ github.repository }}/releases/download/${{ github.ref }}/ios-demo1.ipa"
+      
+      - name: Upload QR codes to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./ios-demo1-debug-qr.svg
+          asset_name: ios-demo1-debug-qr.svg
+          asset_content_type: image/svg+xml
+  
+      - name: Upload QR codes to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./ios-demo1-qr.svg
+          asset_name: ios-demo1-qr.svg
+          asset_content_type: image/svg+xml
